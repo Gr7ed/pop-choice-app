@@ -1,17 +1,29 @@
 {
-  "name": "Movie-AI",
+  "name": "pop-choice",
   "description": "A movie recommendation app built with Vite, OpenAI, and Supabase.",
   "scripts": {
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@langchain/textsplitters": "^1.0.1",
     "@supabase/supabase-js": "^2.38.2",
     "dompurify": "^3.1.5",
     "openai": "^4.12.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "vite": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@vitejs/plugin-react": "^6.1.2",
+    "jsdom": "^30.1.2",
+    "vitest": "^5.0.4"
   }
 }
