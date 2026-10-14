@@ -1,4 +1,4 @@
-# PopChoice
+# PopChoice App
 
 PopChoice is a React + Vite movie recommendation experience. It combines an accessible preference form with OpenAI embeddings, Supabase vector search, and optional TMDB poster lookup.
 

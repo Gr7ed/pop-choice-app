@@ -1,5 +1,5 @@
 {
-  "name": "pop-choice",
+  "name": "pop-choice-app",
   "description": "A movie recommendation app built with Vite, OpenAI, and Supabase.",
   "scripts": {
     "start": "vite",
