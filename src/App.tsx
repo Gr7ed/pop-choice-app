@@ -3,9 +3,17 @@ import { getRecommendations } from './lib/recommendationService';
 import Brand from './components/Brand';
 import PreferenceForm from './components/PreferenceForm';
 import Results from './components/Results';
+import AuthPage from './components/AuthPage';
 import type { AppProps, MovieRecommendation, Preferences, RecommendationStatus } from './lib/types';
 
 export default function App({ recommend = getRecommendations }: AppProps) {
+  const path = window.location.pathname;
+  if (path === '/login') return <AuthPage mode="login" />;
+  if (path === '/signup' || path === '/sign-up') return <AuthPage mode="signup" />;
+  return <RecommendationApp recommend={recommend} />;
+}
+
+function RecommendationApp({ recommend }: Required<AppProps>) {
   const [status, setStatus] = useState<RecommendationStatus>('idle');
   const [recommendations, setRecommendations] = useState<MovieRecommendation[]>([]);
   const [error, setError] = useState('');

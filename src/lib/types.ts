@@ -1,6 +1,3 @@
-import type OpenAI from 'openai';
-import type { SupabaseClient } from '@supabase/supabase-js';
-
 export interface Preferences {
   favoriteMovie: string;
   mood: string;
@@ -59,22 +56,12 @@ export interface ResultsProps {
   error: string;
 }
 
-export interface ServiceClients {
-  openai: OpenAI;
-  supabase: SupabaseClient;
-}
-
 export interface WebSearchArguments {
   query: string;
 }
 
 export interface ImportMetaEnv {
-  readonly VITE_OPENAI_API_KEY?: string;
-  readonly VITE_SUPABASE_URL?: string;
-  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
-  readonly VITE_TMDB_API_KEY?: string;
-  readonly VITE_SUPABASE_ADMIN_EMAIL?: string;
-  readonly VITE_SUPABASE_ADMIN_PASSWORD?: string;
+  readonly VITE_CORS_ORIGIN?: string;
 }
 
 export interface ImportMeta {

@@ -7,7 +7,10 @@ export default function Brand(): ReactElement {
         <img src="/assets/popcorn-logo.png" alt="" width="72" height="72" />
         <span>PopChoice</span>
       </a>
-      <p className="eyebrow">Your next great watch starts here</p>
+      <nav className="site-nav" aria-label="Account">
+        <a href="/login">Log in</a>
+        <a className="nav-action" href="/signup">Sign up</a>
+      </nav>
     </header>
   );
 }

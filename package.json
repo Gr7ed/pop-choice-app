@@ -2,31 +2,53 @@
   "name": "pop-choice-app",
   "description": "A movie recommendation app built with Vite, OpenAI, and Supabase.",
   "scripts": {
-    "start": "vite",
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "start": "npm run dev",
+    "dev": "concurrently -k -n client,server -c blue,green \"npm:dev:client\" \"npm:dev:server\"",
+    "dev:client": "vite --host localhost --port 5173",
+    "dev:server": "wrangler dev --port 8787",
+    "auth:secret": "node scripts/generate-auth-secret.mjs",
+    "seed:movies": "node scripts/seed-movies.mjs",
+    "build": "tsc --noEmit && vite build",
+    "check": "tsc --noEmit && vite build && wrangler deploy --dry-run",
+    "deploy": "wrangler deploy --env production",
+    "cf-typegen": "wrangler types",
+    "lint": "eslint .",
+    "preview": "npm run build && vite preview",
+    "test": "vitest run --config vitest.config.mts",
+    "test:watch": "vitest --config vitest.config.mts"
   },
   "dependencies": {
+    "@hono/zod-validator": "^0.9.1",
     "@langchain/textsplitters": "^1.0.1",
     "@supabase/supabase-js": "^2.38.2",
+    "better-auth": "^1.7.9",
     "dompurify": "^3.1.5",
+    "hono": "^4.13.13",
     "openai": "^4.12.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "vite": "latest"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.64.0",
+    "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
-    "@vitejs/plugin-react": "^6.1.2",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^9.2.1",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
     "jsdom": "^30.1.2",
     "typescript": "^5.9.3",
-    "vitest": "^5.0.4"
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4",
+    "wrangler": "^4.151.0"
   }
 }

@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pop-choice-app",
+  "main": "./src/worker/index.ts",
+  "compatibility_date": "2026-10-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_ENV": "development",
+    "CORS_ORIGIN": "http://localhost:5173",
+    "BETTER_AUTH_URL": "http://localhost:8787"
+  },
+  "env": {
+    "production": {
+      "vars": {
+        "APP_ENV": "production",
+        "CORS_ORIGIN": "https://replace-with-production-domain.example",
+        "BETTER_AUTH_URL": "https://replace-with-production-domain.example"
+      }
+    }
+  },
+  "ratelimits": [
+    {
+      "name": "RECOMMENDATION_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
+    }
+  ]
+}
