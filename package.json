@@ -4,7 +4,7 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "concurrently -k -n client,server -c blue,green \"npm:dev:client\" \"npm:dev:server\"",
-    "dev:client": "vite --host localhost --port 5173",
+    "dev:client": "vite --host localhost --port 5273",
     "dev:server": "wrangler dev --port 8787",
     "auth:secret": "node scripts/generate-auth-secret.mjs",
     "seed:movies": "node scripts/seed-movies.mjs",

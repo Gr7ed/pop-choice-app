@@ -1,5 +1,5 @@
 APP_ENV=development
-CORS_ORIGIN=http://localhost:5173
+CORS_ORIGIN=http://localhost:5273
 BETTER_AUTH_URL=http://localhost:8787
 BETTER_AUTH_SECRET=
 SUPABASE_URL=

@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), cloudflare()],
   appType: 'spa',
   server: {
-    port: 5173,
+    port: 5273,
     strictPort: true,
     proxy: {
       '/api': {

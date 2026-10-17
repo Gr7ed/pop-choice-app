@@ -11,10 +11,10 @@ npm run dev
 
 `npm run dev` starts two processes:
 
-- React/Vite client: `http://localhost:5173`
+- React/Vite client: `http://localhost:5273`
 - Hono/Cloudflare Worker: `http://localhost:8787`
 
-Vite proxies `/api/*` from port `5173` to the Worker on port `8787`, so browser requests remain relative (`/api/...`) and CORS is not needed for normal local use. Better Auth's local base URL is the Worker URL (`http://localhost:8787`), while its trusted frontend origin remains `http://localhost:5173`.
+Vite proxies `/api/*` from port `5273` to the Worker on port `8787`, so browser requests remain relative (`/api/...`) and CORS is not needed for normal local use. Better Auth's local base URL is the Worker URL (`http://localhost:8787`), while its trusted frontend origin remains `http://localhost:5273`.
 
 `/api/recommendations` accepts `POST` only. Opening the URL directly in a browser sends `GET` and returns `405 Method Not Allowed`; submit the preference form or send JSON with `favoriteMovie`, `mood`, and `favoriteGenre`.
 

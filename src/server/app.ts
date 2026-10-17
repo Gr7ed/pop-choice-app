@@ -25,8 +25,7 @@ export const createApp = () => {
   app.route('/api', healthRoutes);
   app.route('/api', authRoutes);
   app.route('/api', recommendationRoutes);
-  app.get('/login', serveApp);
-  app.get('/signup', serveApp);
+  app.get('/sign-in', serveApp);
   app.get('/sign-up', serveApp);
   return app;
 };
