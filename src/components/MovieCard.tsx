@@ -43,7 +43,7 @@ export default function MovieCard({
   );
 
   return (
-    <Card className="group/card gap-3 p-3 ring-border/70 transition duration-200 hover:-translate-y-1 hover:bg-card/90 hover:ring-primary/40 hover:shadow-xl hover:shadow-black/30 focus-within:ring-primary/40">
+    <Card className="group/card gap-3 p-3 ring-border/70 transition duration-200 hover:-translate-y-1 hover:bg-card/90 hover:ring-primary/40 hover:shadow-lg hover:shadow-black/30 focus-within:ring-primary/40">
       <div className="relative aspect-2/3 overflow-hidden rounded-lg bg-[linear-gradient(145deg,#25376b,#111e45)]">
         {movie.posterUrl ? (
           <img

@@ -1,7 +1,7 @@
 import { useActionState, useState } from 'react';
 import type { ReactElement } from 'react';
-import { LuListPlus, LuPlus } from 'react-icons/lu';
-import { addToList, createList, getLists } from '../lib/api-client';
+import { LuCircleCheck, LuInfo, LuListPlus, LuPlus } from 'react-icons/lu';
+import { addToList, ApiRequestError, createList, getLists } from '../lib/api-client';
 import { Button } from './ui/button';
 import Spinner from './ui/spinner';
 import { Input } from './ui/input';
@@ -37,6 +37,7 @@ export default function AddToListDialog({
 }: AddToListDialogProps): ReactElement {
   const [newListName, setNewListName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [feedback, setFeedback] = useState<{ tone: 'success' | 'info'; message: string } | null>(null);
 
   const [, createListAction, isCreating] = useActionState(
     async (_previousState: null, formData: FormData): Promise<null> => {
@@ -47,6 +48,7 @@ export default function AddToListDialog({
         const list = await createList(name);
         onListsChanged([...lists, list]);
         setNewListName('');
+        setFeedback(null);
       } catch (error) {
         onError(error instanceof Error ? error.message : 'Could not create this list.');
       }
@@ -57,17 +59,26 @@ export default function AddToListDialog({
 
   const addTo = async (list: ListSummary) => {
     setIsAdding(true);
+    setFeedback(null);
     try {
       await addToList(list.id, movie);
       onListsChanged(await getLists());
+      setFeedback({ tone: 'success', message: `Added to “${list.name}”` });
     } catch (error) {
-      onError(error instanceof Error ? error.message : 'Could not add this movie to the list.');
+      if (error instanceof ApiRequestError && error.status === 409) {
+        setFeedback({ tone: 'info', message: `“${movie.title}” is already in “${list.name}”` });
+      } else {
+        onError(error instanceof Error ? error.message : 'Could not add this movie to the list.');
+      }
     } finally {
       setIsAdding(false);
     }
   };
 
   const isBusy = isCreating || isAdding;
+
+  const containsMovie = (list: ListSummary) =>
+    typeof movie.tmdbId === 'number' && list.items.some((item) => item.tmdbId === movie.tmdbId);
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -92,26 +103,54 @@ export default function AddToListDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {feedback && (
+          <p
+            role="status"
+            aria-live="polite"
+            className={
+              feedback.tone === 'success'
+                ? 'flex items-center gap-2 rounded-lg border border-primary/45 bg-primary/10 px-3 py-2 text-sm text-foreground'
+                : 'flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'
+            }
+          >
+            {feedback.tone === 'success' ? (
+              <LuCircleCheck className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            ) : (
+              <LuInfo className="size-4 shrink-0" aria-hidden="true" />
+            )}
+            {feedback.message}
+          </p>
+        )}
+
         {lists.length > 0 && (
           <ul className="grid max-h-64 gap-2 overflow-y-auto">
-            {lists.map((list) => (
-              <li key={list.id}>
-                <button
-                  type="button"
-                  disabled={isBusy}
-                  onClick={() => addTo(list)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-left text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <LuListPlus className="size-4 text-primary" aria-hidden="true" />
-                    {list.name}
-                  </span>
-                  <small className="text-muted-foreground">
-                    {list.items.length} movie{list.items.length === 1 ? '' : 's'}
-                  </small>
-                </button>
-              </li>
-            ))}
+            {lists.map((list) => {
+              const alreadyAdded = containsMovie(list);
+              return (
+                <li key={list.id}>
+                  <button
+                    type="button"
+                    disabled={isBusy || alreadyAdded}
+                    onClick={() => addTo(list)}
+                    className="flex w-full items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-left text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <span className="flex items-center gap-2 font-medium">
+                      {alreadyAdded ? (
+                        <LuCircleCheck className="size-4 text-primary" aria-hidden="true" />
+                      ) : (
+                        <LuListPlus className="size-4 text-primary" aria-hidden="true" />
+                      )}
+                      {list.name}
+                    </span>
+                    <small className="text-muted-foreground">
+                      {alreadyAdded
+                        ? 'Already added'
+                        : `${list.items.length} movie${list.items.length === 1 ? '' : 's'}`}
+                    </small>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
 

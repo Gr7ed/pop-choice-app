@@ -57,9 +57,9 @@ export default function MovieRow({
       aria-busy={loading || undefined}
       tabIndex={0}
       className={cn(
-        'flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden rounded-2xl px-1 pt-1 pb-5',
+        'flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden rounded-2xl px-2 pt-2 pb-2',
         'scrollbar-none overscroll-x-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
-        '[&>*]:shrink-0 [&>*]:basis-[clamp(170px,42vw,220px)] [&>*]:snap-start',
+        '*:shrink-0 *:basis-[clamp(170px,42vw,220px)] *:snap-start',
       )}
     >
       {loading

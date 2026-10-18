@@ -2,14 +2,18 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import AddToListDialog from './AddToListDialog';
-import { createList } from '../lib/api-client';
+import { addToList, ApiRequestError, createList, getLists } from '../lib/api-client';
 import type { ListSummary, MovieCardData } from '../lib/types';
 
-vi.mock('../lib/api-client', () => ({
-  addToList: vi.fn(),
-  createList: vi.fn(),
-  getLists: vi.fn(),
-}));
+vi.mock('../lib/api-client', async () => {
+  const actual = await vi.importActual<typeof import('../lib/api-client')>('../lib/api-client');
+  return {
+    addToList: vi.fn(),
+    createList: vi.fn(),
+    getLists: vi.fn(),
+    ApiRequestError: actual.ApiRequestError,
+  };
+});
 
 const movie: MovieCardData = { title: 'Arrival', releaseYear: 2016, tmdbId: 329865 };
 
@@ -57,6 +61,63 @@ describe('AddToListDialog accessibility', () => {
     expect(input).toHaveFocus();
     await user.tab({ shift: true });
     expect(close).toHaveFocus();
+  });
+});
+
+describe('AddToListDialog add to list', () => {
+  const list: ListSummary = { id: 'list-1', name: 'Weekend watchlist', items: [] };
+
+  const renderWithList = (lists: ListSummary[] = [list]) => {
+    render(
+      <AddToListDialog
+        movie={movie}
+        lists={lists}
+        onClose={vi.fn()}
+        onListsChanged={vi.fn()}
+        onError={vi.fn()}
+      />,
+    );
+  };
+
+  it('confirms which list the movie was added to', async () => {
+    const user = userEvent.setup();
+    vi.mocked(addToList).mockResolvedValue(undefined);
+    vi.mocked(getLists).mockResolvedValue([list]);
+    renderWithList();
+
+    await user.click(screen.getByRole('button', { name: /weekend watchlist/i }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/added to .*weekend watchlist/i);
+    expect(addToList).toHaveBeenCalledWith('list-1', movie);
+  });
+
+  it('reports when the movie is already in the list', async () => {
+    const user = userEvent.setup();
+    vi.mocked(addToList).mockRejectedValue(new ApiRequestError(409, 'Movie is already in this list.'));
+    renderWithList();
+
+    await user.click(screen.getByRole('button', { name: /weekend watchlist/i }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/already in .*weekend watchlist/i);
+  });
+
+  it('marks a list that already contains the movie and skips the request', async () => {
+    const user = userEvent.setup();
+    const listWithMovie: ListSummary = {
+      id: 'list-1',
+      name: 'Weekend watchlist',
+      items: [
+        { tmdbId: 329865, title: 'Arrival', releaseYear: 2016, posterUrl: '', voteAverage: 8, overview: null },
+      ],
+    };
+    renderWithList([listWithMovie]);
+
+    const button = screen.getByRole('button', { name: /weekend watchlist/i });
+    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent(/already added/i);
+
+    await user.click(button);
+    expect(addToList).not.toHaveBeenCalled();
   });
 });
 

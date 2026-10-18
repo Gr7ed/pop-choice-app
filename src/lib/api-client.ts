@@ -18,6 +18,17 @@ interface ApiError {
   message?: string;
 }
 
+/** Error thrown for a non-OK API response, keeping the status code for callers. */
+export class ApiRequestError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+}
+
 const parseJson = async <T>(response: Response, fallback: string): Promise<T> => {
   try {
     return (await response.json()) as T;
@@ -113,7 +124,11 @@ export const addToList = async (listId: string, movie: MovieCardData): Promise<v
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(movie),
   });
-  if (!response.ok) throw new Error('Could not add this movie to the list.');
+  if (!response.ok) {
+    const body = await response.json().catch(() => null as ApiError | null);
+    const message = body?.error?.message ?? body?.message ?? 'Could not add this movie to the list.';
+    throw new ApiRequestError(response.status, message);
+  }
 };
 
 export const removeFromList = async (listId: string, tmdbId: number): Promise<void> => {
