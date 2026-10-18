@@ -29,6 +29,21 @@ interface TmdbListResponse {
   total_results?: number;
 }
 
+/**
+ * Query values for `/discover/movie`, keyed by TMDB's own parameter names
+ * (e.g. `sort_by`, `with_genres`, `vote_average.gte`) so callers can pass a
+ * validated request straight through.
+ */
+export type TmdbDiscoverQuery = Record<string, string | number | boolean | undefined>;
+
+/** A single page of TMDB results with the pagination metadata TMDB returns. */
+export interface TmdbPage {
+  page: number;
+  results: TmdbSummary[];
+  totalPages: number;
+  totalResults: number;
+}
+
 export const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
@@ -116,16 +131,55 @@ export class TmdbService {
       .slice(0, limitPerSection);
   }
 
-  async landing(limitPerSection = 12): Promise<{ trending: TmdbSummary[]; topRated: TmdbSummary[] }> {
-    const [trending, topRated] = await Promise.all([
+  private toPage(response: TmdbListResponse): TmdbPage {
+    return {
+      page: response.page ?? 1,
+      results: (response.results ?? [])
+        .map((item) => this.toSummary(item))
+        .filter((item): item is TmdbSummary => item !== null),
+      totalPages: response.total_pages ?? 0,
+      totalResults: response.total_results ?? 0,
+    };
+  }
+
+  /** Drop blanks and stringify the rest so values are safe to append to a URL. */
+  private toParams(query: TmdbDiscoverQuery): Record<string, string> {
+    const params: Record<string, string> = {};
+    for (const [key, value] of Object.entries(query)) {
+      if (value === undefined || value === null || value === '') continue;
+      params[key] = String(value);
+    }
+    return params;
+  }
+
+  async landing(limitPerSection = 12): Promise<{ trending: TmdbSummary[]; topRated: TmdbSummary[]; nowPlaying: TmdbSummary[] }> {
+    const [trending, topRated, nowPlaying] = await Promise.all([
       this.request<TmdbListResponse>('/trending/all/day'),
       this.request<TmdbListResponse>('/movie/top_rated'),
+      this.request<TmdbListResponse>('/movie/now_playing'),
     ]);
 
     return {
       trending: this.toList(trending, limitPerSection),
       topRated: this.toList(topRated, limitPerSection),
+      nowPlaying: this.toList(nowPlaying, limitPerSection),
     };
+  }
+
+  /**
+   * Find movies with TMDB's `/discover/movie` filters and sort options.
+   * Comma-separated values are AND queries, pipes are OR queries — TMDB's
+   * convention is preserved because the query is passed through untouched.
+   */
+  async discoverMovies(query: TmdbDiscoverQuery = {}): Promise<TmdbPage> {
+    const response = await this.request<TmdbListResponse>('/discover/movie', this.toParams(query));
+    return this.toPage(response);
+  }
+
+  /** A page of movies currently playing in theatres. */
+  async nowPlaying(query: TmdbDiscoverQuery = {}): Promise<TmdbPage> {
+    const response = await this.request<TmdbListResponse>('/movie/now_playing', this.toParams(query));
+    return this.toPage(response);
   }
 
   async findByTitle(title: string): Promise<TmdbSummary | null> {

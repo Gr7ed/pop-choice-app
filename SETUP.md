@@ -106,9 +106,7 @@ Everything secret is set as a **Wrangler secret** — it is never committed to c
 ```
 wrangler login
 
-# Supabase
-npx wrangler secret put SUPABASE_URL --env production
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env production
+# Supabase (the Worker connects to Postgres directly; the REST keys are not read at runtime)
 npx wrangler secret put SUPABASE_DB_URL --env production
 
 # Auth (generate a fresh secret for production: npm run auth:secret)
@@ -118,7 +116,7 @@ npx wrangler secret put BETTER_AUTH_SECRET --env production
 npx wrangler secret put OPENAI_API_KEY --env production
 npx wrangler secret put TMDB_API_KEY --env production
 
-npm run deploy   # = wrangler deploy --env production
+npm run deploy   # = npm run build && wrangler deploy --env production
 ```
 
 `BETTER_AUTH_URL` and `CORS_ORIGIN` are *vars* (not secrets) and must match your real

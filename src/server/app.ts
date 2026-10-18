@@ -9,6 +9,7 @@ import { securityHeaders } from './middleware/security';
 import { authRoutes } from './routes/auth';
 import { healthRoutes } from './routes/health';
 import { libraryRoutes } from './routes/library';
+import { movieRoutes } from './routes/movies';
 import { recommendationRoutes } from './routes/recommendations';
 import type { AppEnv } from './types';
 
@@ -27,6 +28,7 @@ export const createApp = () => {
   app.route('/api', healthRoutes);
   app.route('/api', authRoutes);
   app.route('/api', libraryRoutes);
+  app.route('/api', movieRoutes);
   app.route('/api', recommendationRoutes);
   app.get('/sign-in', serveApp);
   app.get('/sign-up', serveApp);

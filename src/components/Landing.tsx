@@ -14,6 +14,7 @@ interface LandingProps {
 }
 
 const sections = [
+  { key: 'nowPlaying', title: 'Now playing in theatres' },
   { key: 'trending', title: 'Trending on TMDB' },
   { key: 'topRated', title: 'Top rated of all time' },
 ] as const;
@@ -43,11 +44,11 @@ export default function Landing({ authed, favoriteIds, onToggleFavorite, onAddTo
   const cardActions = { isFavorite, showActions: authed, onToggleFavorite, onAddToList };
 
   return (
-    <section className="grid gap-8" aria-label="Trending movies">
+    <section className="grid gap-8" aria-label="Movie highlights">
       <div className="max-w-2xl">
         <p className="text-kicker text-xs">Discover</p>
         <h2 className="mt-2.5 mb-3 font-heading text-2xl text-foreground sm:text-3xl">
-          Trending &amp; top rated right now
+          In theatres, trending &amp; top rated
         </h2>
         <p className="text-lg leading-relaxed text-muted-foreground">
           Start from what everyone is watching, then tell us your taste for a personal shortlist.

@@ -4,6 +4,8 @@ import type {
   ListSummary,
   MovieRecommendation,
   MovieCardData,
+  MovieFilters,
+  MoviePage,
   Preferences,
 } from './types';
 
@@ -63,6 +65,30 @@ export const getDiscover = async (): Promise<DiscoverPayload> => {
   const response = await requestJson('/api/discover');
   if (!response.ok) throw new Error('Discover feed is unavailable right now.');
   return parseJson<DiscoverPayload>(response, 'Discover feed returned an invalid response.');
+};
+
+/** Turn the browse filters into TMDB's own query parameter names. */
+const toDiscoverQuery = (filters: MovieFilters, page: number): string => {
+  const params = new URLSearchParams({ page: String(page), sort_by: filters.sortBy });
+  if (filters.genre) params.set('with_genres', filters.genre);
+  if (filters.year) params.set('primary_release_year', filters.year);
+  if (filters.minRating) params.set('vote_average.gte', filters.minRating);
+  if (filters.language) params.set('with_original_language', filters.language);
+  return params.toString();
+};
+
+/** Filter and page through movies via the proxied `/discover/movie` endpoint. */
+export const discoverMovies = async (filters: MovieFilters, page = 1): Promise<MoviePage> => {
+  const response = await requestJson(`/api/movies/discover?${toDiscoverQuery(filters, page)}`);
+  if (!response.ok) throw new Error('Movie filtering is unavailable right now.');
+  return parseJson<MoviePage>(response, 'Movie filtering returned an invalid response.');
+};
+
+/** Fetch a page of movies currently playing in theatres. */
+export const getNowPlaying = async (page = 1): Promise<MoviePage> => {
+  const response = await requestJson(`/api/movies/now-playing?page=${page}`);
+  if (!response.ok) throw new Error('Now playing is unavailable right now.');
+  return parseJson<MoviePage>(response, 'Now playing returned an invalid response.');
 };
 
 export const getFavoriteMovies = async (): Promise<LibraryMovie[]> => {

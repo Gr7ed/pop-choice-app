@@ -33,6 +33,7 @@ describe('PopChoice', () => {
     const user = userEvent.setup();
     const recommend = vi.fn();
     renderApp({ recommend });
+    await screen.findByLabelText(/favorite movie/i);
     await user.click(screen.getByRole('button', { name: /find my movies/i }));
     expect(recommend).not.toHaveBeenCalled();
     expect(screen.getByLabelText(/favorite movie/i)).toBeInvalid();
@@ -42,7 +43,7 @@ describe('PopChoice', () => {
     const user = userEvent.setup();
     const recommend = vi.fn().mockResolvedValue([{ title: 'Arrival', releaseYear: '2016', content: 'A thoughtful, atmospheric fit.', posterUrl: null }]);
     renderApp({ recommend });
-    await user.type(screen.getByLabelText(/favorite movie/i), preferences.favoriteMovie);
+    await user.type(await screen.findByLabelText(/favorite movie/i), preferences.favoriteMovie);
     await user.type(screen.getByLabelText(/new release/i), preferences.mood);
     await user.type(screen.getByLabelText(/kind of energy/i), preferences.favoriteGenre);
     await user.click(screen.getByRole('button', { name: /find my movies/i }));
@@ -54,6 +55,7 @@ describe('PopChoice', () => {
     const user = userEvent.setup();
     const recommend = vi.fn().mockRejectedValue(new Error('secret backend detail'));
     renderApp({ recommend });
+    await screen.findByLabelText(/favorite movie/i);
     for (const [label, value] of [['favorite movie', 'A'], ['new release', 'B'], ['kind of energy', 'C']]) {
       await user.type(screen.getByLabelText(new RegExp(label, 'i')), value);
     }
@@ -62,19 +64,20 @@ describe('PopChoice', () => {
     expect(screen.queryByText(/secret backend/i)).not.toBeInTheDocument();
   });
 
-  it('provides a skip link and a single top-level heading', () => {
+  it('provides a skip link and a single top-level heading', async () => {
     renderApp({ recommend: vi.fn() });
     expect(screen.getByRole('link', { name: /skip to content/i })).toHaveAttribute('href', '#main-content');
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
 });
 
 describe('PopChoice navigation', () => {
-  it('renders home, favorites and my lists nav links', () => {
+  it('renders home, discover, favorites and my lists nav links', () => {
     renderApp({ recommend: vi.fn() });
     const nav = screen.getByRole('navigation', { name: /primary/i });
     expect(nav).toBeInTheDocument();
-    for (const name of [/home/i, /favorites/i, /my lists/i]) {
+    for (const name of [/home/i, /discover/i, /favorites/i, /my lists/i]) {
       expect(screen.getAllByRole('link', { name })[0]).toBeInTheDocument();
     }
   });
@@ -85,14 +88,14 @@ describe('PopChoice navigation', () => {
     expect(active).toBeTruthy();
   });
 
-  it('redirects unknown routes to the not-found page', () => {
+  it('redirects unknown routes to the not-found page', async () => {
     renderApp({ recommend: vi.fn() }, ['/nope']);
-    expect(screen.getByRole('heading', { name: /doesn’t exist/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /doesn’t exist/i })).toBeInTheDocument();
   });
 
-  it('renders the my lists page for signed-out visitors', () => {
+  it('renders the my lists page for signed-out visitors', async () => {
     renderApp({ recommend: vi.fn() }, ['/mylists']);
-    expect(screen.getByRole('heading', { level: 1, name: /my lists/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /my lists/i })).toBeInTheDocument();
   });
 
   it('opens the mobile menu with the same navigation links', async () => {
@@ -100,7 +103,7 @@ describe('PopChoice navigation', () => {
     renderApp({ recommend: vi.fn() });
     await user.click(screen.getByRole('button', { name: /open menu/i }));
     const mobileNav = await screen.findByRole('navigation', { name: /mobile/i });
-    for (const name of [/home/i, /favorites/i, /my lists/i]) {
+    for (const name of [/home/i, /discover/i, /favorites/i, /my lists/i]) {
       expect(within(mobileNav).getByRole('link', { name })).toBeInTheDocument();
     }
   });

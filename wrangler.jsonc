@@ -21,9 +21,23 @@
     "production": {
       "vars": {
         "APP_ENV": "production",
-        "CORS_ORIGIN": "https://replace-with-production-domain.example",
-        "BETTER_AUTH_URL": "https://replace-with-production-domain.example"
-      }
+        // Replace <your-subdomain> with your account's workers.dev subdomain.
+        "CORS_ORIGIN": "https://pop-choice-app-production.suhail142176.workers.dev",
+        "BETTER_AUTH_URL": "https://pop-choice-app-production.suhail142176.workers.dev"
+      },
+      // `ratelimits` is NOT inherited from the top-level config, so every
+      // environment must declare it. A distinct namespace_id keeps local dev
+      // and production from sharing rate-limit counters.
+      "ratelimits": [
+        {
+          "name": "RECOMMENDATION_RATE_LIMITER",
+          "namespace_id": "1002",
+          "simple": {
+            "limit": 10,
+            "period": 60
+          }
+        }
+      ]
     }
   },
   "ratelimits": [

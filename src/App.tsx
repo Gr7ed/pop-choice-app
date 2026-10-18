@@ -1,15 +1,30 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import type { ReactElement } from 'react';
-import AuthPage from './components/AuthPage';
 import SiteFooter from './components/layout/site-footer';
 import SiteHeader from './components/layout/site-header';
-import FavoritesPage from './pages/favorites-page';
-import HomePage from './pages/home-page';
-import MyListsPage from './pages/my-lists-page';
-import NotFoundPage from './pages/not-found-page';
+import Spinner from './components/ui/spinner';
 import { LibraryProvider } from './lib/library-context';
 import { getRecommendations } from './lib/recommendationService';
 import type { AppProps } from './lib/types';
+
+// Route-level splitting keeps the initial shell small; each page (and its
+// dialogs, filters, and forms) loads when the visitor navigates to it.
+const AuthPage = lazy(() => import('./components/AuthPage'));
+const DiscoverPage = lazy(() => import('./pages/discover-page'));
+const FavoritesPage = lazy(() => import('./pages/favorites-page'));
+const HomePage = lazy(() => import('./pages/home-page'));
+const MyListsPage = lazy(() => import('./pages/my-lists-page'));
+const NotFoundPage = lazy(() => import('./pages/not-found-page'));
+
+function RouteFallback(): ReactElement {
+  return (
+    <div role="status" aria-live="polite" className="flex min-h-[50vh] items-center justify-center gap-3">
+      <Spinner className="size-5 text-primary" />
+      <span className="sr-only">Loading page…</span>
+    </div>
+  );
+}
 
 /**
  * App shell: a shared header/footer around the routed pages. The library
@@ -27,17 +42,20 @@ export default function App({ recommend = getRecommendations }: AppProps): React
         </a>
         <SiteHeader />
         <main id="main-content" className="flex-1">
-          <Routes>
-            <Route path="/" element={<HomePage recommend={recommend} />} />
-            <Route path="/favorites" element={<FavoritesPage />} />
-            <Route path="/mylists" element={<MyListsPage />} />
-            <Route path="/login" element={<AuthPage mode="login" />} />
-            <Route path="/signup" element={<AuthPage mode="signup" />} />
-            <Route path="/signin" element={<Navigate to="/login" replace />} />
-            <Route path="/sign-up" element={<Navigate to="/signup" replace />} />
-            <Route path="/sign-in" element={<Navigate to="/login" replace />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<HomePage recommend={recommend} />} />
+              <Route path="/discover" element={<DiscoverPage />} />
+              <Route path="/favorites" element={<FavoritesPage />} />
+              <Route path="/mylists" element={<MyListsPage />} />
+              <Route path="/login" element={<AuthPage mode="login" />} />
+              <Route path="/signup" element={<AuthPage mode="signup" />} />
+              <Route path="/signin" element={<Navigate to="/login" replace />} />
+              <Route path="/sign-up" element={<Navigate to="/signup" replace />} />
+              <Route path="/sign-in" element={<Navigate to="/login" replace />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
         </main>
         <SiteFooter />
       </div>

@@ -1,5 +1,5 @@
 import type { IconType } from 'react-icons';
-import { LuHeart, LuHouse, LuListVideo } from 'react-icons/lu';
+import { LuCompass, LuHeart, LuHouse, LuListVideo } from 'react-icons/lu';
 
 export interface NavItem {
   to: string;
@@ -11,6 +11,7 @@ export interface NavItem {
 
 export const primaryNav: NavItem[] = [
   { to: '/', label: 'Home', icon: LuHouse, end: true },
+  { to: '/discover', label: 'Discover', icon: LuCompass },
   { to: '/favorites', label: 'Favorites', icon: LuHeart },
   { to: '/mylists', label: 'My Lists', icon: LuListVideo },
 ];

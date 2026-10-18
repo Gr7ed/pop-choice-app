@@ -47,7 +47,40 @@ export interface ListSummary {
 export interface DiscoverPayload {
   trending: TmdbCard[];
   topRated: TmdbCard[];
+  nowPlaying: TmdbCard[];
 }
+
+/** A page of TMDB results plus the pagination metadata the proxy forwards. */
+export interface MoviePage {
+  page: number;
+  results: TmdbCard[];
+  totalPages: number;
+  totalResults: number;
+}
+
+/**
+ * Filters the browse page sends to `/api/movies/discover`. Values use TMDB's
+ * own query names and are applied to the proxy unchanged.
+ */
+export interface MovieFilters {
+  sortBy: string;
+  /** Single genre id, or `1,2` (AND) / `1|2` (OR) for multiple. */
+  genre: string;
+  /** Primary release year, as a string because it comes from a select control. */
+  year: string;
+  /** Minimum `vote_average`, 0–10. */
+  minRating: string;
+  /** ISO 639-1 original language code. */
+  language: string;
+}
+
+export interface PaginationProps {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  disabled?: boolean;
+}
+
 
 export interface RecommendationResponse {
   recommendations: MovieRecommendation[];

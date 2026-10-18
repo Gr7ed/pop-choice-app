@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), cloudflare()],
+  plugins: [react(), tailwindcss(), cloudflare({ inspectorPort: 9229 })],
   appType: 'spa',
   resolve: {
     alias: {
