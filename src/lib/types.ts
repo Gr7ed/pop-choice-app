@@ -75,6 +75,10 @@ export interface MovieCardProps {
   showActions?: boolean;
   onToggleFavorite?: (movie: MovieCardData) => void;
   onAddToList?: (movie: MovieCardData) => void;
+  /** Optional destructive action, e.g. removing a movie from a saved list. */
+  onRemove?: (movie: MovieCardData) => void;
+  /** Label for the `onRemove` button. Defaults to "Remove". */
+  removeLabel?: string;
 }
 
 export interface ResultsProps {

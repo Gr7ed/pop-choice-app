@@ -1,7 +1,19 @@
-import { useActionState, useEffect, useId, useRef, useState } from 'react';
+import { useActionState, useState } from 'react';
 import type { ReactElement } from 'react';
+import { LuListPlus, LuPlus } from 'react-icons/lu';
 import { addToList, createList, getLists } from '../lib/api-client';
-import { Button, Field } from './ui';
+import { Button } from './ui/button';
+import Spinner from './ui/spinner';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
 import type { ListSummary, MovieCardData } from '../lib/types';
 
 interface AddToListDialogProps {
@@ -12,9 +24,10 @@ interface AddToListDialogProps {
   onError: (message: string) => void;
 }
 
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
+/**
+ * Modal for saving a movie into one of the user's lists, or creating a new one
+ * on the spot. Radix owns focus trapping, Escape handling, and scroll locking.
+ */
 export default function AddToListDialog({
   movie,
   lists,
@@ -24,55 +37,6 @@ export default function AddToListDialog({
 }: AddToListDialogProps): ReactElement {
   const [newListName, setNewListName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const headingId = useId();
-  const hintId = useId();
-
-  // Modal behaviour: focus the dialog, trap Tab, close on Escape, lock scroll,
-  // and hand focus back to the trigger when the dialog unmounts.
-  useEffect(() => {
-    const node = dialogRef.current;
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    node?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      if (event.key !== 'Tab' || !node) return;
-      const items = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (items.length === 0) {
-        event.preventDefault();
-        return;
-      }
-      const first = items[0];
-      const last = items[items.length - 1];
-      const active = document.activeElement;
-      if (event.shiftKey && (active === first || active === node)) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && active === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previouslyFocused?.focus?.();
-    };
-  }, [onClose]);
-
-  const refresh = async () => {
-    onListsChanged(await getLists());
-  };
 
   const [, createListAction, isCreating] = useActionState(
     async (_previousState: null, formData: FormData): Promise<null> => {
@@ -95,7 +59,7 @@ export default function AddToListDialog({
     setIsAdding(true);
     try {
       await addToList(list.id, movie);
-      await refresh();
+      onListsChanged(await getLists());
     } catch (error) {
       onError(error instanceof Error ? error.message : 'Could not add this movie to the list.');
     } finally {
@@ -106,61 +70,87 @@ export default function AddToListDialog({
   const isBusy = isCreating || isAdding;
 
   return (
-    <div className="dialog-backdrop" role="presentation" onClick={onClose}>
-      <div
-        ref={dialogRef}
-        className="dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={headingId}
-        aria-describedby={lists.length === 0 ? hintId : undefined}
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        className="gap-5 sm:max-w-md"
         aria-busy={isBusy || undefined}
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
+        onOpenAutoFocus={(event) => {
+          // Keep focus on the dialog itself on open so the title is announced
+          // and the first Tab lands on the list-name field.
+          event.preventDefault();
+          (event.target as HTMLElement | null)?.focus();
+        }}
       >
-        <div className="form-heading">
-          <p className="section-kicker">Your lists</p>
-          <h2 id={headingId} className="section-title section-title-sm">Add “{movie.title}”</h2>
-        </div>
-        {lists.length === 0 ? (
-          <p className="dialog-hint" id={hintId}>You have no lists yet — create your first one below.</p>
-        ) : (
-          <ul className="dialog-lists">
+        <DialogHeader>
+          <p className="text-kicker text-xs">Your lists</p>
+          <DialogTitle className="font-heading text-xl">Add “{movie.title}”</DialogTitle>
+          <DialogDescription>
+            {lists.length === 0
+              ? 'You have no lists yet — create your first one below.'
+              : 'Pick a list to save this movie to, or start a new one.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        {lists.length > 0 && (
+          <ul className="grid max-h-64 gap-2 overflow-y-auto">
             {lists.map((list) => (
               <li key={list.id}>
-                <button type="button" disabled={isBusy} onClick={() => addTo(list)}>
-                  <span>{list.name}</span>
-                  <small>{list.items.length} movie{list.items.length === 1 ? '' : 's'}</small>
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  onClick={() => addTo(list)}
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-border px-4 py-3 text-left text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <LuListPlus className="size-4 text-primary" aria-hidden="true" />
+                    {list.name}
+                  </span>
+                  <small className="text-muted-foreground">
+                    {list.items.length} movie{list.items.length === 1 ? '' : 's'}
+                  </small>
                 </button>
               </li>
             ))}
           </ul>
         )}
-        <form className="dialog-form" action={createListAction}>
-          <Field label="New list name">
-            <input
+
+        <form className="grid gap-4" action={createListAction}>
+          <div className="grid gap-2">
+            <Label htmlFor="new-list-name">New list name</Label>
+            <Input
+              id="new-list-name"
               type="text"
               name="name"
               value={newListName}
               onChange={(event) => setNewListName(event.target.value)}
               placeholder="Weekend watchlist"
               maxLength={80}
+              className="h-10 rounded-xl"
             />
-          </Field>
-          <div className="dialog-actions">
-            <Button variant="ghost" onClick={onClose}>Close</Button>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Close
+            </Button>
             <Button
               type="submit"
-              size="sm"
-              loading={isCreating}
-              loadingLabel="Creating list…"
-              disabled={!newListName.trim()}
+              disabled={!newListName.trim() || isBusy}
+              aria-busy={isCreating || undefined}
             >
-              Create list
+              {isCreating ? (
+                <>
+                  <Spinner /> Creating list…
+                </>
+              ) : (
+                <>
+                  <LuPlus aria-hidden="true" /> Create list
+                </>
+              )}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

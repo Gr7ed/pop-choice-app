@@ -54,11 +54,16 @@ export const getDiscover = async (): Promise<DiscoverPayload> => {
   return parseJson<DiscoverPayload>(response, 'Discover feed returned an invalid response.');
 };
 
-export const getFavorites = async (): Promise<number[]> => {
+export const getFavoriteMovies = async (): Promise<LibraryMovie[]> => {
   const response = await requestJson('/api/favorites');
   if (!response.ok) return [];
   const body = await parseJson<{ favorites: LibraryMovie[] }>(response, 'Favorites request failed.');
-  return body.favorites.map((movie) => movie.tmdbId);
+  return body.favorites;
+};
+
+export const getFavorites = async (): Promise<number[]> => {
+  const movies = await getFavoriteMovies();
+  return movies.map((movie) => movie.tmdbId);
 };
 
 export const addFavorite = async (movie: MovieCardData): Promise<void> => {

@@ -1,4 +1,5 @@
 import type { AriaRole, ReactElement, ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
   /** Decorative glyph or spinner shown above the message. */
@@ -29,14 +30,31 @@ export default function EmptyState({
   live,
   busy,
   label,
-  className = '',
+  className,
 }: EmptyStateProps): ReactElement {
-  const classes = ['empty-state', tone === 'error' ? 'error-state' : '', className].filter(Boolean).join(' ');
   return (
-    <section className={classes} role={role} aria-live={live} aria-busy={busy || undefined} aria-label={label}>
-      <span aria-hidden="true">{icon}</span>
-      <p>{children}</p>
-      {hint && <small>{hint}</small>}
+    <section
+      role={role}
+      aria-live={live}
+      aria-busy={busy || undefined}
+      aria-label={label}
+      className={cn(
+        'flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/70 bg-card/40 px-6 py-12 text-center',
+        tone === 'error' && 'border-destructive/40 bg-destructive/5',
+        className,
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          'grid size-12 place-items-center rounded-full bg-primary/10 text-xl text-primary',
+          tone === 'error' && 'bg-destructive/10 text-destructive',
+        )}
+      >
+        {icon}
+      </span>
+      <p className="font-heading text-lg text-foreground">{children}</p>
+      {hint && <small className="text-sm text-muted-dim">{hint}</small>}
     </section>
   );
 }

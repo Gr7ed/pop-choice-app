@@ -2,6 +2,8 @@
 
 PopChoice is a React + Vite movie recommendation experience served by a modular Hono API on Cloudflare Workers. Provider credentials stay server-side while Supabase provides Postgres/pgvector storage and Better Auth provides sessions.
 
+The client UI is built with Tailwind CSS v4, shadcn/ui primitives, `react-icons`, and React Router.
+
 ## Getting started
 
 ```bash
@@ -44,18 +46,23 @@ npm run preview     # preview the production build
 
 ## Structure
 
-- `src/App.tsx` contains the composed application shell, routing between the recommendation experience and the auth pages.
-- `src/components/` holds feature components (`Landing`, `MovieRow`, `MovieCard`, `PreferenceForm`, `Results`, `AuthPage`, `AddToListDialog`, `Brand`).
-- `src/components/ui/` holds the reusable primitives (`Button`, `Field`, `EmptyState`, `Spinner`) that keep loading, error, and form styling consistent.
+- `src/main.tsx` mounts the app inside a `BrowserRouter`.
+- `src/App.tsx` is the routed shell: a shared header and footer around the home, favorites, my lists, auth, and not-found pages, all wrapped in the library provider.
+- `src/pages/` holds the routed pages (`home-page`, `favorites-page`, `my-lists-page`, `not-found-page`).
+- `src/components/layout/` holds the polished responsive header (NavLink active states, mobile slide-over sheet), footer, page header, and nav config.
+- `src/components/` holds feature components (`Landing`, `MovieRow`, `MovieCard`, `PreferenceForm`, `Results`, `AuthPage`, `AddToListDialog`, `EmptyState`, `SignInPrompt`).
+- `src/components/ui/` holds the shadcn/ui primitives (button, card, dialog, dropdown-menu, avatar, sheet, input, textarea, label, badge, separator, skeleton) plus a shared spinner. Icons come from `react-icons`.
+- `src/lib/library-context.tsx` owns the signed-in user's favorites and lists so every route reads and mutates the same state.
 - `src/lib/useSession.ts` wraps Better Auth's React session hook so components share one typed session shape.
-- `src/styles/index.css` contains the responsive visual system: design tokens, fluid type scale, visible focus states, accessible empty/loading/error states, and reduced-motion behavior.
+- `src/styles/index.css` is the Tailwind v4 entry: PopChoice's dark theme tokens (navy surfaces, mint accent, Carter One / Roboto Slab) mapped onto shadcn's CSS variables, plus reduced-motion behavior.
+- `components.json` and `opencode.json` configure shadcn/ui and the shadcn MCP server (`npx shadcn@latest mcp`) for registry browsing.
 - `src/lib/api-client.ts` calls the Hono recommendation API; no provider credentials are used in the browser.
 - `src/lib/auth-client.ts` wraps Better Auth's React client (`authClient.useSession` / `signIn` / `signUp` / `signOut`) against the same-origin `/api/auth` routes.
 - `src/worker/index.ts` is the Cloudflare Worker entrypoint, following the official Vite React template layout.
 - `src/server/` contains the Hono app, routes, middleware, Better Auth integration, provider services, and validation schemas.
 - `db/migrations/` contains Supabase schema and vector-search migrations.
 - `public/assets/` contains static assets served without bundling, such as the PopChoice logo.
-- `src/App.test.tsx` covers required fields, successful recommendations, and user-safe error handling.
+- `src/App.test.tsx` covers required fields, successful recommendations, user-safe error handling, and route/navigation behaviour.
 
 The project keeps the template's Cloudflare Vite plugin, Worker deployment flow, TypeScript build gate, ESLint setup, and SPA asset handling while adding PopChoice's recommendation and authentication features.
 

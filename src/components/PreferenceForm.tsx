@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent, ReactElement } from 'react';
-import { Button, Field } from './ui';
+import { LuSparkles, LuWand } from 'react-icons/lu';
+import { Button } from './ui/button';
+import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 import type { PreferenceFormProps, Preferences } from '../lib/types';
 
 const initialPreferences: Preferences = { favoriteMovie: '', mood: '', favoriteGenre: '' };
@@ -36,16 +39,24 @@ export default function PreferenceForm({ onSubmit, isLoading }: PreferenceFormPr
   };
 
   return (
-    <form className="preference-form" onSubmit={submit} aria-describedby="form-help">
-      <div className="form-heading">
-        <p className="section-kicker">Set the scene</p>
-        <h2 className="section-title section-title-lg">What are you in the mood to watch?</h2>
-        <p id="form-help">Tell us a little about your taste and we&apos;ll curate a short list worth pressing play on.</p>
+    <form className="grid gap-8" onSubmit={submit} aria-describedby="form-help">
+      <div className="max-w-3xl">
+        <p className="text-kicker text-xs">Set the scene</p>
+        <h2 className="mt-2.5 mb-3 font-heading text-3xl text-foreground sm:text-4xl">
+          What are you in the mood to watch?
+        </h2>
+        <p id="form-help" className="max-w-xl text-lg leading-relaxed text-muted-foreground">
+          Tell us a little about your taste and we&apos;ll curate a short list worth pressing play on.
+        </p>
       </div>
-      <div className="form-fields">
+
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-4">
         {fields.map((field) => (
-          <Field key={field.id} label={field.label}>
-            <textarea
+          <div key={field.id} className="grid content-start gap-2.5">
+            <Label htmlFor={field.id} className="text-base text-foreground">
+              {field.label}
+            </Label>
+            <Textarea
               id={field.id}
               name={field.name}
               value={preferences[field.name]}
@@ -53,12 +64,22 @@ export default function PreferenceForm({ onSubmit, isLoading }: PreferenceFormPr
               placeholder={field.placeholder}
               required
               rows={4}
+              className="min-h-34 rounded-xl border-border bg-card px-4 py-4 text-base leading-relaxed"
             />
-          </Field>
+          </div>
         ))}
       </div>
-      <Button type="submit" className="preference-submit" loading={isLoading} loadingLabel="Finding your films…">
-        Find my movies
+
+      <Button type="submit" size="lg" disabled={isLoading} aria-busy={isLoading || undefined} className="h-12 w-fit min-w-48 rounded-full px-8 text-base">
+        {isLoading ? (
+          <>
+            <LuSparkles className="size-4 animate-pulse" aria-hidden="true" /> Finding your films…
+          </>
+        ) : (
+          <>
+            <LuWand className="size-4" aria-hidden="true" /> Find my movies
+          </>
+        )}
       </Button>
     </form>
   );

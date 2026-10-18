@@ -1,140 +1,46 @@
-import { useCallback, useEffect, useState } from 'react';
-import { getRecommendations } from './lib/recommendationService';
-import { addFavorite, getFavorites, getLists, removeFavorite } from './lib/api-client';
-import { useSession } from './lib/useSession';
-import AddToListDialog from './components/AddToListDialog';
+import { Navigate, Route, Routes } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import AuthPage from './components/AuthPage';
-import Brand from './components/Brand';
-import Landing from './components/Landing';
-import PreferenceForm from './components/PreferenceForm';
-import Results from './components/Results';
-import type {
-  AppProps,
-  ListSummary,
-  MovieCardData,
-  MovieRecommendation,
-  Preferences,
-  RecommendationStatus,
-} from './lib/types';
+import SiteFooter from './components/layout/site-footer';
+import SiteHeader from './components/layout/site-header';
+import FavoritesPage from './pages/favorites-page';
+import HomePage from './pages/home-page';
+import MyListsPage from './pages/my-lists-page';
+import NotFoundPage from './pages/not-found-page';
+import { LibraryProvider } from './lib/library-context';
+import { getRecommendations } from './lib/recommendationService';
+import type { AppProps } from './lib/types';
 
-export default function App({ recommend = getRecommendations }: AppProps) {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  useEffect(() => {
-    const onPopState = () => setCurrentPath(window.location.pathname);
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  if (currentPath === '/signin' || currentPath === '/login') {
-    return <AuthPage mode="login" />;
-  }
-  if (currentPath === '/signup') {
-    return <AuthPage mode="signup" />;
-  }
-
-  return <RecommendationApp recommend={recommend} />;
-}
-
-const toCardData = (movie: MovieRecommendation): MovieCardData => ({
-  title: movie.title,
-  releaseYear: movie.releaseYear,
-  posterUrl: movie.posterUrl ?? null,
-  content: movie.content,
-  tmdbId: movie.tmdbId,
-  voteAverage: movie.tmdbId ? movie.voteAverage ?? null : null,
-});
-
-function RecommendationApp({ recommend }: Required<AppProps>) {
-  const { user, isAuthed } = useSession();
-  const userId = user?.id;
-  const [status, setStatus] = useState<RecommendationStatus>('idle');
-  const [recommendations, setRecommendations] = useState<MovieRecommendation[]>([]);
-  const [error, setError] = useState('');
-  const [libraryError, setLibraryError] = useState('');
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
-  const [lists, setLists] = useState<ListSummary[]>([]);
-  const [listDialogMovie, setListDialogMovie] = useState<MovieCardData | null>(null);
-
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    Promise.all([getFavorites(), getLists()])
-      .then(([favorites, userLists]) => {
-        if (cancelled) return;
-        setFavoriteIds(favorites);
-        setLists(userLists);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
-  const toggleFavorite = async (movie: MovieCardData) => {
-    if (typeof movie.tmdbId !== 'number') return;
-    const wasFavorite = favoriteIds.includes(movie.tmdbId);
-    setFavoriteIds(wasFavorite ? favoriteIds.filter((id) => id !== movie.tmdbId) : [...favoriteIds, movie.tmdbId]);
-    setLibraryError('');
-    try {
-      if (wasFavorite) {
-        await removeFavorite(movie.tmdbId);
-      } else {
-        await addFavorite(movie);
-      }
-      setFavoriteIds(await getFavorites());
-    } catch (requestError) {
-      setFavoriteIds(wasFavorite ? [...favoriteIds, movie.tmdbId] : favoriteIds.filter((id) => id !== movie.tmdbId));
-      setLibraryError(requestError instanceof Error ? requestError.message : 'Could not update this favorite.');
-    }
-  };
-
-  const openListDialog = useCallback((movie: MovieCardData) => setListDialogMovie(movie), []);
-  const closeListDialog = useCallback(() => setListDialogMovie(null), []);
-
-  const handleSubmit = async (preferences: Preferences) => {
-    setStatus('loading');
-    setError('');
-    try {
-      setRecommendations(await recommend(preferences));
-      setStatus('success');
-    } catch (requestError) {
-      console.error(requestError);
-      setStatus('error');
-      setError('We couldn’t find your recommendations right now.');
-    }
-  };
-
+/**
+ * App shell: a shared header/footer around the routed pages. The library
+ * provider wraps everything so favorites and lists stay in sync across routes.
+ */
+export default function App({ recommend = getRecommendations }: AppProps): ReactElement {
   return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main-content">Skip to content</a>
-      <Brand />
-      <main className="main-content" id="main-content">
-        <h1 className="visually-hidden">PopChoice movie recommendations</h1>
-        {libraryError && <p className="alert alert-danger" role="alert">{libraryError}</p>}
-        <Landing
-          authed={isAuthed}
-          favoriteIds={favoriteIds}
-          onToggleFavorite={toggleFavorite}
-          onAddToList={openListDialog}
-        />
-        <PreferenceForm onSubmit={handleSubmit} isLoading={status === 'loading'} />
-        <Results
-          status={status}
-          recommendations={recommendations.map(toCardData)}
-          error={error}
-        />
-      </main>
-      {listDialogMovie && (
-        <AddToListDialog
-          movie={listDialogMovie}
-          lists={lists}
-          onClose={closeListDialog}
-          onListsChanged={setLists}
-          onError={setLibraryError}
-        />
-      )}
-      <footer>PopChoice <span aria-hidden="true">•</span> made for curious movie people</footer>
-    </div>
+    <LibraryProvider>
+      <div className="flex min-h-dvh flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:font-bold focus:text-primary-foreground"
+        >
+          Skip to content
+        </a>
+        <SiteHeader />
+        <main id="main-content" className="flex-1">
+          <Routes>
+            <Route path="/" element={<HomePage recommend={recommend} />} />
+            <Route path="/favorites" element={<FavoritesPage />} />
+            <Route path="/mylists" element={<MyListsPage />} />
+            <Route path="/login" element={<AuthPage mode="login" />} />
+            <Route path="/signup" element={<AuthPage mode="signup" />} />
+            <Route path="/signin" element={<Navigate to="/login" replace />} />
+            <Route path="/sign-up" element={<Navigate to="/signup" replace />} />
+            <Route path="/sign-in" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </main>
+        <SiteFooter />
+      </div>
+    </LibraryProvider>
   );
 }

@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
 import MovieCard from './MovieCard';
+import { Skeleton } from './ui/skeleton';
+import { cn } from '../lib/utils';
 import type { MovieCardProps, MovieCardData } from '../lib/types';
 
 interface MovieRowProps {
@@ -20,22 +22,22 @@ const cardKey = (movie: MovieCardData) => movie.tmdbId ?? `${movie.title}-${movi
 
 function MovieCardSkeleton(): ReactElement {
   return (
-    <article className="movie-card movie-card--skeleton" aria-hidden="true">
-      <div className="movie-poster-frame skeleton" />
-      <div className="movie-info">
-        <span className="skeleton skeleton-line skeleton-line--sm" />
-        <span className="skeleton skeleton-line skeleton-line--lg" />
-        <span className="skeleton skeleton-line" />
-        <span className="skeleton skeleton-line" />
+    <article className="flex flex-col gap-3 rounded-xl bg-card p-3 ring-1 ring-border/70" aria-hidden="true">
+      <Skeleton className="aspect-2/3 w-full rounded-lg" />
+      <div className="flex flex-col gap-2 px-1 pb-1">
+        <Skeleton className="h-4 w-2/5" />
+        <Skeleton className="h-5 w-4/5" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-3/4" />
       </div>
     </article>
   );
 }
 
 /**
- * Horizontally scrolling flex strip of movie cards. Cards keep a fixed flex
- * basis and snap while scrolling, so their content never squashes. It is
- * focusable and labelled so keyboard and screen-reader users can reach it.
+ * Horizontally scrolling strip of movie cards. Cards keep a fixed basis and
+ * snap while scrolling, so their content never squashes. It is focusable and
+ * labelled so keyboard and screen-reader users can reach it.
  */
 export default function MovieRow({
   movies,
@@ -49,7 +51,17 @@ export default function MovieRow({
   onAddToList,
 }: MovieRowProps): ReactElement {
   return (
-    <div className="movie-row" role="region" aria-label={label} aria-busy={loading || undefined} tabIndex={0}>
+    <div
+      role="region"
+      aria-label={label}
+      aria-busy={loading || undefined}
+      tabIndex={0}
+      className={cn(
+        'flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden rounded-2xl px-1 pt-1 pb-5',
+        'scrollbar-none overscroll-x-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+        '[&>*]:shrink-0 [&>*]:basis-[clamp(170px,42vw,220px)] [&>*]:snap-start',
+      )}
+    >
       {loading
         ? Array.from({ length: skeletonCount }, (_, i) => <MovieCardSkeleton key={i} />)
         : movies.map((movie) => (
