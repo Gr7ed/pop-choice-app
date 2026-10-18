@@ -3,11 +3,16 @@ import { createAuth, isAuthConfigured } from '../auth';
 import type { AppEnv } from '../types';
 
 export const optionalAuth = createMiddleware<AppEnv>(async (c, next) => {
-  if (!isAuthConfigured(c.env)) {
+  if (!isAuthConfigured(c.env) || c.req.path.startsWith('/api/auth')) {
     await next();
     return;
   }
-  const auth = createAuth(c.env);
+  const db = c.get('db');
+  if (!db) {
+    await next();
+    return;
+  }
+  const auth = createAuth(c.env, db);
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
   if (session?.user?.id) c.set('userId', session.user.id);
   await next();

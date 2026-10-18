@@ -47,6 +47,7 @@ npm run preview     # preview the production build
 - `src/App.tsx` contains the composed application and reusable form, results, and movie-card components.
 - `src/styles/index.css` contains the responsive visual system, visible focus states, loading/error states, and reduced-motion behavior.
 - `src/lib/api-client.ts` calls the Hono recommendation API; no provider credentials are used in the browser.
+- `src/lib/auth-client.ts` wraps Better Auth's React client (`authClient.useSession` / `signIn` / `signUp` / `signOut`) against the same-origin `/api/auth` routes.
 - `src/worker/index.ts` is the Cloudflare Worker entrypoint, following the official Vite React template layout.
 - `src/server/` contains the Hono app, routes, middleware, Better Auth integration, provider services, and validation schemas.
 - `db/migrations/` contains Supabase schema and vector-search migrations.

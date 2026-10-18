@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './db/client';
 
 export interface CloudflareBindings {
   ASSETS?: {
@@ -9,8 +9,10 @@ export interface CloudflareBindings {
   BETTER_AUTH_URL?: string;
   BETTER_AUTH_SECRET?: string;
   SUPABASE_URL?: string;
-  SUPABASE_SERVICE_ROLE_KEY?: string;
+  SUPABASE_SECRET?: string;
+  SUPABASE_DB_URL?: string;
   OPENAI_API_KEY?: string;
+  TMDB_READ_TOKEN?: string;
   TMDB_API_KEY?: string;
   RECOMMENDATION_RATE_LIMITER?: {
     limit: (options: { key: string }) => Promise<{ success: boolean }>;
@@ -20,7 +22,7 @@ export interface CloudflareBindings {
 export interface AppVariables {
   requestId: string;
   userId?: string;
-  supabase?: SupabaseClient;
+  db?: Database;
 }
 
 export type AppEnv = {

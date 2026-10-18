@@ -1,8 +1,17 @@
+# Local development template. Copy to `.dev.vars` and fill in the real values.
+# NEVER commit `.dev.vars` — it is gitignored.
+
 APP_ENV=development
 CORS_ORIGIN=http://localhost:5273
 BETTER_AUTH_URL=http://localhost:8787
-BETTER_AUTH_SECRET=
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
-OPENAI_API_KEY=
-TMDB_API_KEY=
+BETTER_AUTH_SECRET=replace-with-generated-secret
+
+# Supabase
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_xxx
+SUPABASE_DB_URL=postgresql:
+
+# Third-party APIs
+OPENAI_API_KEY=sk-...
+TMDB_READ_TOKEN=eyJ...
+TMDB_API_KEY=...

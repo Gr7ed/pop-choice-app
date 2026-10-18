@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import type { FormEvent, ReactElement } from 'react';
+import { useEffect, useActionState, useState } from 'react';
+import type { ReactElement } from 'react';
+import { authClient } from '../lib/auth-client';
 import Brand from './Brand';
 
 type AuthMode = 'login' | 'signup';
@@ -8,11 +9,9 @@ interface AuthPageProps {
   mode: AuthMode;
 }
 
-interface AuthErrorResponse {
-  error?: {
-    message?: string;
-  };
-  message?: string;
+interface AuthActionState {
+  error: string;
+  ok: boolean;
 }
 
 const authCopy = {
@@ -36,41 +35,48 @@ const authCopy = {
   },
 } as const;
 
+const authenticate = async (_prevState: AuthActionState, formData: FormData): Promise<AuthActionState> => {
+  const email = String(formData.get('email') ?? '');
+  const password = String(formData.get('password') ?? '');
+  const name = String(formData.get('name') ?? '');
+  const isLogin = formData.get('mode') === 'login';
+
+  const fallbackMessage = isLogin
+    ? 'We couldn’t sign you in. Check your details and try again.'
+    : 'We couldn’t create your account. Check your details and try again.';
+
+  try {
+    const { error } = isLogin
+      ? await authClient.signIn.email({ email, password })
+      : await authClient.signUp.email({ name, email, password });
+
+    if (error) {
+      throw new Error(error.message || fallbackMessage);
+    }
+    return { error: '', ok: true };
+  } catch (requestError) {
+    console.error(requestError);
+    const message = requestError instanceof Error && requestError.message
+      ? requestError.message
+      : fallbackMessage;
+    return { error: message, ok: false };
+  }
+};
+
+const initialAuthState: AuthActionState = { error: '', ok: false };
+
 export default function AuthPage({ mode }: AuthPageProps): ReactElement {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [state, submit, isPending] = useActionState(authenticate, initialAuthState);
   const copy = authCopy[mode];
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    const endpoint = mode === 'login' ? '/api/auth/sign-in/email' : '/api/auth/sign-up/email';
-    const payload = mode === 'login' ? { email, password } : { name, email, password };
-
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      const body = await response.json() as AuthErrorResponse;
-      if (!response.ok) {
-        throw new Error(body.error?.message || body.message || 'Authentication failed.');
-      }
+  useEffect(() => {
+    if (state.ok) {
       window.location.assign('/');
-    } catch (requestError) {
-      console.error(requestError);
-      setError(mode === 'login' ? 'We couldn’t sign you in. Check your details and try again.' : 'We couldn’t create your account. Check your details and try again.');
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [state.ok]);
 
   return (
     <div className="auth-shell">
@@ -80,7 +86,8 @@ export default function AuthPage({ mode }: AuthPageProps): ReactElement {
           <p className="section-kicker">{copy.eyebrow}</p>
           <h1 id="auth-heading">{copy.title}</h1>
           <p className="auth-description">{copy.description}</p>
-          <form className="auth-form" onSubmit={submit}>
+          <form className="auth-form" action={submit}>
+            <input type="hidden" name="mode" value={mode} />
             {mode === 'signup' && (
               <label className="field">
                 <span>Full name</span>
@@ -118,9 +125,9 @@ export default function AuthPage({ mode }: AuthPageProps): ReactElement {
               />
               {mode === 'signup' && <small className="field-hint">Use at least 8 characters.</small>}
             </label>
-            {error && <p className="auth-error" role="alert">{error}</p>}
-            <button className="submit-btn auth-submit" type="submit" disabled={isLoading}>
-              {isLoading ? <><span className="spinner" aria-hidden="true" /> Working…</> : copy.submit}
+            {state.error && <p className="auth-error" role="alert">{state.error}</p>}
+            <button className="submit-btn auth-submit" type="submit" disabled={isPending}>
+              {isPending ? <><span className="spinner" aria-hidden="true" /> Working…</> : copy.submit}
             </button>
           </form>
           <p className="auth-switch">{copy.alternate} <a href={copy.alternateHref}>{copy.alternateAction}</a></p>

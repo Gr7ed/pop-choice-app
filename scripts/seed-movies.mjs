@@ -1,124 +1,127 @@
-import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import OpenAI from 'openai';
-import { createClient } from '@supabase/supabase-js';
+import postgres from 'postgres';
+import { chunkContent, POSTER_BASE, toHash, readDevVar, readDevVars } from './lib/tmdb-lib.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+// NOTE: `openai` must be dynamically imported *after* all global `fetch`
+// calls — importing the SDK first makes subsequent global fetch promises
+// never settle (openai v4 SDK ↔ Node 24 undici interop bug). The SDK's
+// own internal fetches keep working once imported.
 
-const readVars = async () => {
-  const path = resolve(root, '.dev.vars');
-  const source = await readFile(path, 'utf8');
-  return Object.fromEntries(
-    source
-      .split(/\r?\n/)
-      .filter((line) => line.trim() && !line.trim().startsWith('#'))
-      .map((line) => {
-        const separator = line.indexOf('=');
-        return [
-          line.slice(0, separator).trim(),
-          line.slice(separator + 1).trim().replace(/^"(.*)"$/, '$1'),
-        ];
-      }),
-  );
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const EMBEDDING_MODEL = 'text-embedding-ada-002';
+
+const args = new Set(process.argv.slice(2));
+const countArg = args.has('--count') ? Number(process.argv[process.argv.indexOf('--count') + 1]) : 40;
+const limit = Number.isFinite(countArg) && countArg > 0 ? Math.min(Math.floor(countArg), 100) : 40;
+
+const vars = readDevVars(new URL('../.dev.vars', import.meta.url));
+const tmdbApiKey = readDevVar(vars, 'TMDB_API_KEY');
+const openAiKey = readDevVar(vars, 'OPENAI_API_KEY');
+const dbUrl = readDevVar(vars, 'SUPABASE_DB_URL');
+
+for (const [name, value] of [['SUPABASE_DB_URL', dbUrl], ['OPENAI_API_KEY', openAiKey], ['TMDB_API_KEY', tmdbApiKey]]) {
+  if (!value) {
+    console.error(`Missing ${name} — set it in .dev.vars (or the process env).`);
+    process.exit(1);
+  }
+}
+
+const sql = postgres(dbUrl, { max: 1, prepare: false, fetch_types: false });
+
+const tmdbGet = async (path) => {
+  const response = await fetch(`${TMDB_BASE}${path}${path.includes('?') ? '&' : '?'}api_key=${tmdbApiKey}`);
+  if (!response.ok) throw new Error(`TMDB ${path} failed with status ${response.status}`);
+  return response.json();
 };
 
-const parseMovies = (source) => source
-  .split(/\r?\n\s*\r?\n/)
-  .map((block) => block.trim())
-  .filter(Boolean)
-  .map((content) => {
-    const firstLine = content.split(/\r?\n/, 1)[0];
-    const match = firstLine.match(/^(.*?):\s*(\d{4})\b/);
-    return {
-      title: match?.[1]?.trim() || firstLine.slice(0, 200),
-      release_year: match ? Number(match[2]) : null,
-      content,
-      content_hash: createHash('sha256').update(content).digest('hex'),
-    };
+const fetchCandidates = async () => {
+  const [trending, topRated, genreList] = await Promise.all([
+    tmdbGet('/trending/movie/week'),
+    tmdbGet('/movie/top_rated'),
+    tmdbGet('/genre/movie/list'),
+  ]);
+  const genreNames = new Map((genreList.genres ?? []).map((genre) => [genre.id, genre.name]));
+  const toCandidate = (movie) => ({
+    tmdbId: movie.id,
+    title: movie.title,
+    overview: movie.overview ?? '',
+    releaseDate: movie.release_date || null,
+    releaseYear: movie.release_date ? Number(movie.release_date.slice(0, 4)) : null,
+    posterPath: movie.poster_path
+      ? movie.poster_path.replace(POSTER_BASE, '')
+      : null,
+    voteAverage: movie.vote_average ?? null,
+    voteCount: movie.vote_count ?? null,
+    popularity: movie.popularity ?? null,
+    genres: (movie.genre_ids ?? []).map((id) => genreNames.get(id)).filter(Boolean),
   });
+  const byId = new Map();
+  for (const movie of [...(trending.results ?? []), ...(topRated.results ?? [])]) {
+    if (!byId.has(movie.id)) {
+      byId.set(movie.id, toCandidate(movie));
+    }
+    if (byId.size >= limit) break;
+  }
+  return Array.from(byId.values()).slice(0, limit);
+};
 
 const main = async () => {
-  const vars = await readVars();
-  const openAiKey = vars.OPENAI_API_KEY;
-  const supabaseUrl = vars.SUPABASE_URL;
-  const serviceRoleKey = vars.SUPABASE_SERVICE_ROLE_KEY;
+  const candidates = await fetchCandidates();
+  console.log(`Preparing to seed ${candidates.length} movies from TMDB trending/week + top rated.`);
 
-  if (!openAiKey || !supabaseUrl || !serviceRoleKey) {
-    throw new Error('Set OPENAI_API_KEY, SUPABASE_URL, and SUPABASE_SERVICE_ROLE_KEY in .dev.vars first.');
-  }
+  const { default: OpenAI } = await import('openai');
+  const openai = new OpenAI({ apiKey: openAiKey });
 
-  const [source, openai, supabase] = await Promise.all([
-    readFile(resolve(root, 'src/lib/data/movies.txt'), 'utf8'),
-    Promise.resolve(new OpenAI({ apiKey: openAiKey })),
-    Promise.resolve(createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })),
-  ]);
-
-  const movies = parseMovies(source);
-  let seeded = 0;
+  let inserted = 0;
   let skipped = 0;
 
-  for (const movie of movies) {
-    const { data: existing, error: existingError } = await supabase
-      .from('movie_chunks')
-      .select('id')
-      .eq('content_hash', movie.content_hash)
-      .maybeSingle();
-    if (existingError) throw existingError;
-    if (existing) {
+  for (const movie of candidates) {
+    const [upserted] = await sql`
+      insert into movies (tmdb_id, title, overview, release_date, release_year, poster_path, vote_average, vote_count, popularity, genres)
+      values (${movie.tmdbId}, ${movie.title}, ${movie.overview}, ${movie.releaseDate}, ${movie.releaseYear},
+              ${movie.posterPath}, ${movie.voteAverage}, ${movie.voteCount}, ${movie.popularity}, ${JSON.stringify(movie.genres)}::jsonb)
+      on conflict (tmdb_id) do update set
+        title = excluded.title,
+        overview = excluded.overview,
+        release_date = excluded.release_date,
+        release_year = excluded.release_year,
+        poster_path = excluded.poster_path,
+        vote_average = excluded.vote_average,
+        vote_count = excluded.vote_count,
+        popularity = excluded.popularity,
+        genres = excluded.genres,
+        updated_at = now()
+      returning id
+    `;
+    if (!upserted) throw new Error(`Failed to upsert movie "${movie.title}"`);
+
+    const content = chunkContent(movie.title, movie.releaseYear, movie.overview, movie.genres);
+    const contentHash = toHash(content);
+    const [existingChunk] = await sql`select id from movie_chunks where content_hash = ${contentHash}`;
+    if (existingChunk) {
       skipped += 1;
       continue;
     }
 
-    const { data: existingMovie, error: existingMovieError } = await supabase
-      .from('movies')
-      .select('id')
-      .eq('title', movie.title)
-      .eq('release_year', movie.release_year)
-      .maybeSingle();
-    if (existingMovieError) throw existingMovieError;
-    let movieRow = existingMovie;
-    if (!movieRow) {
-      const { data: insertedMovie, error: movieError } = await supabase
-        .from('movies')
-        .insert({
-          title: movie.title,
-          release_year: movie.release_year,
-        })
-        .select('id')
-        .single();
-      if (movieError) throw movieError;
-      movieRow = insertedMovie;
-    }
-
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-ada-002',
-      input: movie.content,
-    });
+    const embeddingResponse = await openai.embeddings.create({ model: EMBEDDING_MODEL, input: content });
     const embedding = embeddingResponse.data[0]?.embedding;
     if (!embedding || embedding.length !== 1536) {
       throw new Error(`Expected a 1536-dimensional embedding for "${movie.title}".`);
     }
-
-    const { error: chunkError } = await supabase.from('movie_chunks').insert({
-      movie_id: movieRow.id,
-      content: movie.content,
-      content_hash: movie.content_hash,
-      embedding,
-    });
-    if (chunkError) throw chunkError;
-
-    seeded += 1;
-    console.log(`Seeded ${seeded}/${movies.length}: ${movie.title}`);
+    await sql`
+      insert into movie_chunks (movie_id, content, content_hash, embedding)
+      values (${upserted.id}, ${content}, ${contentHash}, ${`[${embedding.join(',')}]`})
+    `;
+    inserted += 1;
+    console.log(`Seeded (${inserted}/${candidates.length}): ${movie.title}${movie.releaseYear ? ` (${movie.releaseYear})` : ''}`);
   }
 
-  console.log(`Finished. Seeded ${seeded} movies; skipped ${skipped} existing movies.`);
+  console.log(`Done. Embedded ${inserted} new movies, skipped ${skipped} existing chunks, upserted ${candidates.length} movie records.`);
+  await sql.end();
 };
 
-await main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+try {
+  await main();
+} catch (error) {
+  console.error(error?.message ?? error);
+  process.exit(1);
+}

@@ -32,6 +32,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .site-nav a:hover { color: #fff; }
 .site-nav .nav-action { border: 1px solid var(--accent); border-radius: 999px; padding: .65rem 1rem; color: var(--accent); font-weight: 700; }
 .site-nav .nav-action:hover { background: rgba(104,238,160,.1); }
+.site-nav button.nav-action { background: transparent; cursor: pointer; font: inherit; }
+.site-nav .nav-user { max-width: 16ch; overflow: hidden; color: #fff; font-size: .9rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .eyebrow, .section-kicker, .movie-number { margin: 0; color: var(--accent); font-size: .75rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .eyebrow { color: var(--muted); text-align: right; }
 .main-content { display: grid; gap: 5rem; }
@@ -104,3 +106,35 @@ footer span { color: var(--accent); padding: 0 .4rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* Landing (TMDB discover) */
+.landing { display: grid; gap: 2.5rem; }
+.landing-heading { max-width: 700px; }
+.landing-title { margin: .55rem 0 .8rem; color: #fff; font-family: var(--heading); font-weight: 400; font-size: clamp(1.9rem, 4.5vw, 3.4rem); line-height: 1.15; }
+.landing-heading p:last-child { color: var(--muted); line-height: 1.7; }
+.landing-section { display: grid; gap: 1rem; }
+.landing-section h3 { margin: 0; color: #fff; font-family: var(--heading); font-weight: 400; font-size: 1.4rem; }
+.movie-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 320px); gap: 1rem; overflow-x: auto; padding-bottom: .75rem; scroll-snap-type: x mandatory; }
+.movie-row .movie-card { grid-template-columns: 120px 1fr; width: 100%; scroll-snap-align: start; }
+.movie-row .movie-poster, .movie-row .poster-placeholder { width: 120px; min-height: 172px; }
+
+/* Card actions */
+.movie-rating { margin-left: .75rem; color: #f7d354; letter-spacing: 0; text-transform: none; font-size: .85rem; }
+.movie-actions { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
+.card-action { border: 1px solid var(--line); border-radius: 999px; padding: .55rem 1.1rem; background: transparent; color: #fff; font-size: .85rem; font-weight: 700; cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+.card-action:hover { border-color: var(--accent); color: var(--accent); }
+.card-action.active { background: rgba(104,238,160,.12); border-color: var(--accent); color: var(--accent); }
+.card-action:disabled { opacity: .6; cursor: wait; }
+
+/* Add-to-list dialog */
+.dialog-backdrop { position: fixed; inset: 0; display: grid; place-items: center; padding: 1.5rem; background: rgba(4,10,26,.7); backdrop-filter: blur(4px); z-index: 40; }
+.dialog { width: min(100%, 460px); max-height: min(80vh, 640px); overflow: auto; border: 1px solid var(--line); border-radius: 20px; padding: clamp(1.25rem, 4vw, 2rem); background: rgba(16,31,71,.96); box-shadow: 0 24px 70px rgba(0,0,0,.35); }
+.dialog h2 { margin: .4rem 0 1rem; color: #fff; font-family: var(--heading); font-weight: 400; font-size: 1.6rem; }
+.dialog-hint { color: var(--muted); }
+.dialog-lists { list-style: none; display: grid; gap: .6rem; margin: 0 0 1.25rem; padding: 0; }
+.dialog-lists button { display: flex; align-items: center; justify-content: space-between; gap: .75rem; width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: .85rem 1rem; background: transparent; color: #fff; cursor: pointer; transition: border-color .2s, background .2s; }
+.dialog-lists button:hover:not(:disabled) { border-color: var(--accent); background: rgba(104,238,160,.08); }
+.dialog-lists small { color: var(--muted); }
+.dialog-form { display: grid; gap: 1rem; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: .75rem; }
+.dialog-actions .submit-btn { min-width: auto; padding: .8rem 1.4rem; }
