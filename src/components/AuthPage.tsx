@@ -2,6 +2,7 @@ import { useEffect, useActionState, useState } from 'react';
 import type { ReactElement } from 'react';
 import { authClient } from '../lib/auth-client';
 import Brand from './Brand';
+import { Button, Field } from './ui';
 
 type AuthMode = 'login' | 'signup';
 
@@ -80,17 +81,17 @@ export default function AuthPage({ mode }: AuthPageProps): ReactElement {
 
   return (
     <div className="auth-shell">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <Brand />
-      <main className="auth-main">
+      <main className="auth-main" id="main-content">
         <section className="auth-card" aria-labelledby="auth-heading">
           <p className="section-kicker">{copy.eyebrow}</p>
-          <h1 id="auth-heading">{copy.title}</h1>
+          <h1 id="auth-heading" className="section-title section-title-md auth-title">{copy.title}</h1>
           <p className="auth-description">{copy.description}</p>
           <form className="auth-form" action={submit}>
             <input type="hidden" name="mode" value={mode} />
             {mode === 'signup' && (
-              <label className="field">
-                <span>Full name</span>
+              <Field label="Full name">
                 <input
                   type="text"
                   name="name"
@@ -99,10 +100,9 @@ export default function AuthPage({ mode }: AuthPageProps): ReactElement {
                   autoComplete="name"
                   required
                 />
-              </label>
+              </Field>
             )}
-            <label className="field">
-              <span>Email address</span>
+            <Field label="Email address">
               <input
                 type="email"
                 name="email"
@@ -111,9 +111,8 @@ export default function AuthPage({ mode }: AuthPageProps): ReactElement {
                 autoComplete="email"
                 required
               />
-            </label>
-            <label className="field">
-              <span>Password</span>
+            </Field>
+            <Field label="Password" hint={mode === 'signup' ? 'Use at least 8 characters.' : undefined}>
               <input
                 type="password"
                 name="password"
@@ -123,12 +122,11 @@ export default function AuthPage({ mode }: AuthPageProps): ReactElement {
                 minLength={8}
                 required
               />
-              {mode === 'signup' && <small className="field-hint">Use at least 8 characters.</small>}
-            </label>
-            {state.error && <p className="auth-error" role="alert">{state.error}</p>}
-            <button className="submit-btn auth-submit" type="submit" disabled={isPending}>
-              {isPending ? <><span className="spinner" aria-hidden="true" /> Working…</> : copy.submit}
-            </button>
+            </Field>
+            {state.error && <p className="alert alert-danger" role="alert">{state.error}</p>}
+            <Button type="submit" block loading={isPending} loadingLabel="Working…" className="auth-submit">
+              {copy.submit}
+            </Button>
           </form>
           <p className="auth-switch">{copy.alternate} <a href={copy.alternateHref}>{copy.alternateAction}</a></p>
         </section>

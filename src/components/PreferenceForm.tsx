@@ -1,8 +1,30 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent, ReactElement } from 'react';
+import { Button, Field } from './ui';
 import type { PreferenceFormProps, Preferences } from '../lib/types';
 
 const initialPreferences: Preferences = { favoriteMovie: '', mood: '', favoriteGenre: '' };
+
+const fields = [
+  {
+    id: 'favorite-movie',
+    name: 'favoriteMovie',
+    label: 'What’s a favorite movie and why?',
+    placeholder: 'The Shawshank Redemption, because...',
+  },
+  {
+    id: 'mood',
+    name: 'mood',
+    label: 'New release or classic?',
+    placeholder: 'Something released after 2010...',
+  },
+  {
+    id: 'favorite-genre',
+    name: 'favoriteGenre',
+    label: 'What kind of energy?',
+    placeholder: 'Something silly and fun...',
+  },
+] as const satisfies ReadonlyArray<{ id: string; name: keyof Preferences; label: string; placeholder: string }>;
 
 export default function PreferenceForm({ onSubmit, isLoading }: PreferenceFormProps): ReactElement {
   const [preferences, setPreferences] = useState(initialPreferences);
@@ -17,26 +39,27 @@ export default function PreferenceForm({ onSubmit, isLoading }: PreferenceFormPr
     <form className="preference-form" onSubmit={submit} aria-describedby="form-help">
       <div className="form-heading">
         <p className="section-kicker">Set the scene</p>
-        <h1>What are you in the mood to watch?</h1>
+        <h2 className="section-title section-title-lg">What are you in the mood to watch?</h2>
         <p id="form-help">Tell us a little about your taste and we&apos;ll curate a short list worth pressing play on.</p>
       </div>
       <div className="form-fields">
-        <label className="field">
-          <span>What&apos;s a favorite movie and why?</span>
-          <textarea id="favorite-movie" name="favoriteMovie" value={preferences.favoriteMovie} onChange={update('favoriteMovie')} placeholder="The Shawshank Redemption, because..." required rows={4} />
-        </label>
-        <label className="field">
-          <span>New release or classic?</span>
-          <textarea id="mood" name="mood" value={preferences.mood} onChange={update('mood')} placeholder="Something released after 2010..." required rows={4} />
-        </label>
-        <label className="field">
-          <span>What kind of energy?</span>
-          <textarea id="favorite-genre" name="favoriteGenre" value={preferences.favoriteGenre} onChange={update('favoriteGenre')} placeholder="Something silly and fun..." required rows={4} />
-        </label>
+        {fields.map((field) => (
+          <Field key={field.id} label={field.label}>
+            <textarea
+              id={field.id}
+              name={field.name}
+              value={preferences[field.name]}
+              onChange={update(field.name)}
+              placeholder={field.placeholder}
+              required
+              rows={4}
+            />
+          </Field>
+        ))}
       </div>
-      <button className="submit-btn" type="submit" disabled={isLoading}>
-        {isLoading ? <><span className="spinner" aria-hidden="true" /> Finding your films…</> : 'Find my movies'}
-      </button>
+      <Button type="submit" className="preference-submit" loading={isLoading} loadingLabel="Finding your films…">
+        Find my movies
+      </Button>
     </form>
   );
 }

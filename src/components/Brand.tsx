@@ -1,9 +1,9 @@
 import type { ReactElement } from 'react';
 import { authClient } from '../lib/auth-client';
+import { useSession } from '../lib/useSession';
 
 export default function Brand(): ReactElement {
-  const { data: session } = authClient.useSession();
-  const user = session?.user;
+  const { user } = useSession();
 
   const handleSignOut = async () => {
     await authClient.signOut();

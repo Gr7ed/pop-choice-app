@@ -30,7 +30,7 @@ export const libraryRoutes = new Hono<AppEnv>()
   })
   .get('/favorites', requireAuth, async (c) => {
     const library = new LibraryService(requireDatabase(c));
-    return c.json(await library.favoriteMovies(c.get('userId')!));
+    return c.json({ favorites: await library.favoriteMovies(c.get('userId')!) });
   })
   .put(
     '/favorites/:tmdbId',
@@ -53,7 +53,7 @@ export const libraryRoutes = new Hono<AppEnv>()
   })
   .get('/lists', requireAuth, async (c) => {
     const library = new LibraryService(requireDatabase(c));
-    return c.json(await library.listSummaries(c.get('userId')!));
+    return c.json({ lists: await library.listSummaries(c.get('userId')!) });
   })
   .post('/lists', requireAuth, zValidator('json', listCreateSchema), async (c) => {
     const library = new LibraryService(requireDatabase(c));

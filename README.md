@@ -44,8 +44,11 @@ npm run preview     # preview the production build
 
 ## Structure
 
-- `src/App.tsx` contains the composed application and reusable form, results, and movie-card components.
-- `src/styles/index.css` contains the responsive visual system, visible focus states, loading/error states, and reduced-motion behavior.
+- `src/App.tsx` contains the composed application shell, routing between the recommendation experience and the auth pages.
+- `src/components/` holds feature components (`Landing`, `MovieRow`, `MovieCard`, `PreferenceForm`, `Results`, `AuthPage`, `AddToListDialog`, `Brand`).
+- `src/components/ui/` holds the reusable primitives (`Button`, `Field`, `EmptyState`, `Spinner`) that keep loading, error, and form styling consistent.
+- `src/lib/useSession.ts` wraps Better Auth's React session hook so components share one typed session shape.
+- `src/styles/index.css` contains the responsive visual system: design tokens, fluid type scale, visible focus states, accessible empty/loading/error states, and reduced-motion behavior.
 - `src/lib/api-client.ts` calls the Hono recommendation API; no provider credentials are used in the browser.
 - `src/lib/auth-client.ts` wraps Better Auth's React client (`authClient.useSession` / `signIn` / `signUp` / `signOut`) against the same-origin `/api/auth` routes.
 - `src/worker/index.ts` is the Cloudflare Worker entrypoint, following the official Vite React template layout.

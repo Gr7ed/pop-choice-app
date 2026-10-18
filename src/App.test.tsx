@@ -52,4 +52,10 @@ describe('PopChoice', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/couldn’t find/i);
     expect(screen.queryByText(/secret backend/i)).not.toBeInTheDocument();
   });
+
+  it('provides a skip link and a single top-level heading', () => {
+    render(<App recommend={vi.fn()} />);
+    expect(screen.getByRole('link', { name: /skip to content/i })).toHaveAttribute('href', '#main-content');
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
 });

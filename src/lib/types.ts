@@ -69,6 +69,8 @@ export interface PreferenceFormProps {
 export interface MovieCardProps {
   movie: MovieCardData;
   index?: number;
+  /** Heading level for the title, so cards slot into any section outline. */
+  headingLevel?: 2 | 3 | 4 | 5 | 6;
   isFavorite?: boolean;
   showActions?: boolean;
   onToggleFavorite?: (movie: MovieCardData) => void;
